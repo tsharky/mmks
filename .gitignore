@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# Code Composer Studio
+Debug/
+Release/
+targetConfigs/
+.xdchelp
+
+# Eagle
+pcb/*.[0-9][0-9][0-9]
+
