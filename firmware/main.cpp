@@ -1,61 +1,38 @@
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdio.h>
+#include <vector>
 
-#include "inc/hw_memmap.h"
-#include "driverlib/pin_map.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/interrupt.h"
-#include "driverlib/gpio.h"
-#include "driverlib/uart.h"
-#include "driverlib/can.h"
+#include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
+#include <driverlib/pin_map.h>
+#include <driverlib/sysctl.h>
+#include <driverlib/uart.h>
+#include <inc/hw_memmap.h>
 
-#include "cUART.h"
-#include "cCAN.h"
+#include "IDeviceCom.h"
+#include "UartCom.h"
 
 void initLED(void);
 
-int main(void) {
-   bool mainloop = true;
-   uint32_t sysClock = 0;
-   uint8_t uartData = 0;
-
-   // set sysClock to 120 MHz
-   sysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480),
-                                 120000000);
-
-   // LED
+void main() {
+   uint32_t systemClock = SysCtlClockFreqSet(
+         (SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480), 120000000);
    initLED();
 
-   // UART
-   cUART uart(2);
-   uart.init(sysClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-   uart.enable();
+   //std::vector<IDeviceCom*> com;
 
-   // CAN
-   cCAN can(0);
-   can.init(sysClock, 500000);
-   can.enable();
+   uartConfig config { UART2_BASE, SYSCTL_PERIPH_UART2,
+                       { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PA6_U2RX },
+                       { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_PA7_U2TX } };
+   UartCom uart(config);
+   uart.init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
 
-   // enable global interrupts
-   IntMasterEnable();
+   //com.push_back(new UartCom(deviceUartConfig[2]));
 
-   // start main loop
-   uart.writeData("running...");
-   uart.endl();
+   // com.begin().init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+   // uart.init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
 
-   // main loop
-   while (mainloop)
-   {
-      uart.transmitData();
-
-      if (uart.dataAvailable()) {
-         uart.readData(&uartData);
-         uart.writeData(uartData);
-      }
-   }
-
-   return 0;
+   //for (auto iterator : com)
+   //   iterator->write("suck shit!");
 }
 
 void initLED(void) {
