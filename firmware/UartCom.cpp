@@ -34,6 +34,7 @@ bool UartCom::init(const uint32_t systemClock, const uint32_t baudRate, const ui
 }
 
 std::string UartCom::read() {
+   UARTCharPut(_config.base, UARTCharGet(_config.base));
    return "";
 }
 

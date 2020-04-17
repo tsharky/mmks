@@ -33,6 +33,9 @@ void main() {
 
    //for (auto iterator : com)
    //   iterator->write("suck shit!");
+   while (true) {
+      uart.read();
+   }
 }
 
 void initLED(void) {
