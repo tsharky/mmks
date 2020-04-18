@@ -35,8 +35,10 @@
 Debug/
 Release/
 targetConfigs/
+firmware/.config/
+firmware/.launches/
+firmware/.launches/
 .xdchelp
 
 # Eagle
 pcb/*.[0-9][0-9][0-9]
-
