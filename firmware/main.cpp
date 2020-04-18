@@ -1,58 +1,41 @@
 #include <stdint.h>
 #include <vector>
 
-#include <driverlib/gpio.h>
-#include <driverlib/interrupt.h>
-#include <driverlib/pin_map.h>
-#include <driverlib/sysctl.h>
-#include <driverlib/uart.h>
-#include <inc/hw_memmap.h>
-
+#include "IStatusLed.h"
+#include "StatusLed.h"
 #include "IDeviceCom.h"
 #include "UartCom.h"
 
-void initLED(void);
+constexpr static uart::ioConfig uart_ioConfig =
+      { UART2_BASE, SYSCTL_PERIPH_UART2, { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PA6_U2RX }, {
+            SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_PA7_U2TX } };
+constexpr static led::ioConfig led_ioConfig_ro = { SYSCTL_PERIPH_GPION, GPIO_PORTN_BASE, GPIO_PIN_0 };
+constexpr static led::ioConfig led_ioConfig_lo = { SYSCTL_PERIPH_GPION, GPIO_PORTN_BASE, GPIO_PIN_1 };
+constexpr static led::ioConfig led_ioConfig_ru = { SYSCTL_PERIPH_GPIOF, GPIO_PORTF_BASE, GPIO_PIN_0 };
+constexpr static led::ioConfig led_ioConfig_lu = { SYSCTL_PERIPH_GPIOF, GPIO_PORTF_BASE, GPIO_PIN_4 };
 
 void main() {
-   uint32_t systemClock = SysCtlClockFreqSet(
+   uint32_t sysClock = SysCtlClockFreqSet(
          (SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480), 120000000);
-   initLED();
+   std::vector<IStatusLed*> leds;
+   leds.push_back(new StatusLed(led_ioConfig_ro));
+   leds.push_back(new StatusLed(led_ioConfig_lo));
+   leds.push_back(new StatusLed(led_ioConfig_ru));
+   leds.push_back(new StatusLed(led_ioConfig_lu));
 
-   //std::vector<IDeviceCom*> com;
+   uart::Com uart(uart_ioConfig);
+   uart.init({ sysClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE) });
 
-   uartConfig config { UART2_BASE, SYSCTL_PERIPH_UART2,
-                       { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PA6_U2RX },
-                       { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_PA7_U2TX } };
-   UartCom uart(config);
-   uart.init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+   std::vector<IDeviceCom*> deviceCom;
+   deviceCom.push_back(&uart);
 
-   //com.push_back(new UartCom(deviceUartConfig[2]));
-
-   // com.begin().init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-   // uart.init(systemClock, 115200, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-
-   //for (auto iterator : com)
-   //   iterator->write("suck shit!");
    while (true) {
-      uart.read();
+      for (auto iterator : leds) {
+         iterator->toggle();
+         uart.read();
+         for (auto iterator : deviceCom) {
+            iterator->write("Hello Misi!\n");
+         }
+      }
    }
-}
-
-void initLED(void) {
-   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
-   while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPION))
-      ;
-   GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_0);
-   GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_1);
-
-   SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-   while (!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF))
-      ;
-   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_0);
-   GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_4);
-
-   GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0, GPIO_PIN_0);
-   GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_1, GPIO_PIN_1);
-   GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_0, GPIO_PIN_0);
-   GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, GPIO_PIN_4);
 }

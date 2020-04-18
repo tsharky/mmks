@@ -3,48 +3,46 @@
 
 #include "IDeviceCom.h"
 
-#include <map>
 #include <stdint.h>
 #include <string>
 
 #include <driverlib/gpio.h>
+#include <driverlib/interrupt.h>
 #include <driverlib/pin_map.h>
 #include <driverlib/sysctl.h>
 #include <driverlib/uart.h>
 #include <inc/hw_memmap.h>
 
-#include <iostream>
-
-typedef struct _uartPinConfig {
+namespace uart {
+typedef struct _pinConfig {
    uint32_t peripheral;
    uint32_t port;
    uint32_t pin;
    uint32_t config;
-} uartPinConfig;
+} pinConfig;
 
-typedef struct _uartConfig {
+typedef struct _ioConfig {
    uint32_t base;
    uint32_t peripheral;
-   uartPinConfig rx;
-   uartPinConfig tx;
-} uartConfig;
+   pinConfig rx;
+   pinConfig tx;
+} ioConfig;
 
-/*
-std::map<int, uartConfig> deviceUartConfig = { { 2, {
-      UART2_BASE, SYSCTL_PERIPH_UART2, { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PA6_U2RX }, {
-            SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_PA7_U2TX } } },
-      { 3, { UART2_BASE, SYSCTL_PERIPH_UART2, { SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_6, GPIO_PA6_U2RX }, {
-            SYSCTL_PERIPH_GPIOA, GPIO_PORTA_BASE, GPIO_PIN_7, GPIO_PA7_U2TX } } } };
- */
+typedef struct _busConfig {
+   uint32_t sysClock;
+   uint32_t baud;
+   uint32_t format;
+} busConfig;
 
-class UartCom : public IDeviceCom {
-   const uartConfig _config;
+class Com : public IDeviceCom {
+   const uint32_t _base;
 public:
-   UartCom(const uartConfig& config);
-   virtual ~UartCom() override;
-   bool init(const uint32_t sysClock, const uint32_t baudRate, const uint32_t config);
+   Com(const ioConfig& config);
+   virtual ~Com() override;
+   void init(const busConfig& config);
    virtual std::string read() override;
    virtual bool write(const std::string& message) override;
 };
+}
 
 #endif /* UARTCOM_H_ */

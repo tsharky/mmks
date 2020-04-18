@@ -1,43 +1,44 @@
 #include "UartCom.h"
 
-#include <driverlib/gpio.h>
-#include <driverlib/interrupt.h>
-#include <driverlib/sysctl.h>
-#include <driverlib/uart.h>
+#include <chrono>
+#include <ctime>
 
-UartCom::UartCom(const uartConfig& config) :
-      _config(config) {
-   SysCtlPeripheralEnable(_config.peripheral);
-   while (!SysCtlPeripheralReady(_config.peripheral))
+using namespace uart;
+
+Com::Com(const ioConfig& config) :
+      _base(config.base) {
+   SysCtlPeripheralEnable(config.peripheral);
+   while (!SysCtlPeripheralReady(config.peripheral))
       ;
 
-   SysCtlPeripheralEnable(_config.rx.peripheral);
-   while (!SysCtlPeripheralReady(_config.rx.peripheral))
+   SysCtlPeripheralEnable(config.rx.peripheral);
+   while (!SysCtlPeripheralReady(config.rx.peripheral))
       ;
-   GPIOPinTypeUART(_config.rx.port, _config.rx.pin);
-   GPIOPinConfigure(_config.rx.config);
+   GPIOPinTypeUART(config.rx.port, config.rx.pin);
+   GPIOPinConfigure(config.rx.config);
 
-   SysCtlPeripheralEnable(_config.tx.peripheral);
-   while (!SysCtlPeripheralReady(_config.tx.peripheral))
+   SysCtlPeripheralEnable(config.tx.peripheral);
+   while (!SysCtlPeripheralReady(config.tx.peripheral))
       ;
-   GPIOPinTypeUART(_config.tx.port, _config.tx.pin);
-   GPIOPinConfigure(_config.tx.config);
+   GPIOPinTypeUART(config.tx.port, config.tx.pin);
+   GPIOPinConfigure(config.tx.config);
 }
 
-UartCom::~UartCom() {
+Com::~Com() {
 
 }
 
-bool UartCom::init(const uint32_t systemClock, const uint32_t baudRate, const uint32_t config) {
-   UARTConfigSetExpClk(_config.base, systemClock, baudRate, config);
-   return true;
+void Com::init(const busConfig& config) {
+   UARTConfigSetExpClk(_base, config.sysClock, config.baud, config.format);
 }
 
-std::string UartCom::read() {
-   UARTCharPut(_config.base, UARTCharGet(_config.base));
+std::string Com::read() {
+   UARTCharPut(_base, UARTCharGet(_base));
    return "";
 }
 
-bool UartCom::write(const std::string& message) {
+bool Com::write(const std::string& message) {
+   for (auto iterator : message)
+      UARTCharPut(_base, iterator);
    return true;
 }
