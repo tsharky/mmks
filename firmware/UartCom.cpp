@@ -30,6 +30,7 @@ Com::~Com() {
 
 void Com::init(const busConfig& config) {
    UARTConfigSetExpClk(_base, config.sysClock, config.baud, config.format);
+   UARTEnable(_base);
 }
 
 std::string Com::read() {
